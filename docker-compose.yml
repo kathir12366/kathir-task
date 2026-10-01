@@ -1,6 +1,3 @@
-
-version: "3.9"
-
 services:
   mysql:
     image: mysql:8
@@ -23,8 +20,7 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: ./backend
+    image: 240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-backend:latest
     container_name: backend-container
     restart: always
     ports:
@@ -40,18 +36,28 @@ services:
         condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
-    build:
-      context: ./frontend
+    image: 240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-frontend:latest
     container_name: frontend-container
     restart: always
     ports:
       - "5173:5173"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5173',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mysql-data:

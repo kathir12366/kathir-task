@@ -111,15 +111,72 @@ pipeline {
                 '''
             }
         }
+
+        stage('Deploy with Docker Compose') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Deploying Application"
+                    echo "======================================"
+
+                    docker compose pull
+                    docker compose up -d
+
+                    echo "======================================"
+                    echo " Container Status"
+                    echo "======================================"
+
+                    docker compose ps
+                '''
+            }
+        }
+
+        stage('Application Health Check') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Application Health Check"
+                    echo "======================================"
+
+                    echo "Waiting for services..."
+                    sleep 15
+
+                    echo "Checking Backend..."
+                    curl -f http://localhost:3000
+
+                    echo ""
+                    echo "Checking Frontend..."
+                    curl -f http://localhost:5173
+
+                    echo ""
+                    echo "Checking Container Health..."
+
+                    docker inspect \
+                    --format='{{.Name}} : {{.State.Health.Status}}' \
+                    mysql-container
+
+                    docker inspect \
+                    --format='{{.Name}} : {{.State.Health.Status}}' \
+                    backend-container
+
+                    docker inspect \
+                    --format='{{.Name}} : {{.State.Health.Status}}' \
+                    frontend-container
+
+                    echo ""
+                    echo "Application health check completed successfully!"
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo 'SUCCESS: Frontend and Backend images built, scanned and pushed to ECR successfully!'
+            echo 'SUCCESS: Build, Trivy scan, ECR push, Docker Compose deployment and health checks completed successfully!'
         }
 
         failure {
-            echo 'PIPELINE FAILED: Please check the stage logs for details.'
+            echo 'PIPELINE FAILED: Please check the failed stage logs.'
         }
     }
 }
