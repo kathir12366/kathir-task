@@ -1,3 +1,4 @@
+```groovy
 pipeline {
     agent any
 
@@ -41,11 +42,11 @@ pipeline {
             steps {
                 sh '''
                     aws ecr get-login-password \
-                    --region ap-south-1 | \
+                    --region ${AWS_REGION} | \
                     docker login \
                     --username AWS \
                     --password-stdin \
-                    240571106446.dkr.ecr.ap-south-1.amazonaws.com
+                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
                 '''
             }
         }
@@ -54,7 +55,7 @@ pipeline {
             steps {
                 sh '''
                     docker build \
-                    -t 240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-frontend:latest \
+                    -t ${FRONTEND_IMAGE}:latest \
                     ./frontend
                 '''
             }
@@ -64,8 +65,32 @@ pipeline {
             steps {
                 sh '''
                     docker build \
-                    -t 240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-backend:latest \
+                    -t ${BACKEND_IMAGE}:latest \
                     ./backend
+                '''
+            }
+        }
+
+        stage('Trivy Security Scan') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo " Trivy Frontend Image Security Scan"
+                    echo "======================================"
+
+                    trivy image \
+                    --format table \
+                    --severity HIGH,CRITICAL \
+                    ${FRONTEND_IMAGE}:latest
+
+                    echo "======================================"
+                    echo " Trivy Backend Image Security Scan"
+                    echo "======================================"
+
+                    trivy image \
+                    --format table \
+                    --severity HIGH,CRITICAL \
+                    ${BACKEND_IMAGE}:latest
                 '''
             }
         }
@@ -74,7 +99,7 @@ pipeline {
             steps {
                 sh '''
                     docker push \
-                    240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-frontend:latest
+                    ${FRONTEND_IMAGE}:latest
                 '''
             }
         }
@@ -83,7 +108,7 @@ pipeline {
             steps {
                 sh '''
                     docker push \
-                    240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-backend:latest
+                    ${BACKEND_IMAGE}:latest
                 '''
             }
         }
@@ -91,7 +116,12 @@ pipeline {
 
     post {
         success {
-            echo 'SUCCESS: Frontend and Backend images pushed to ECR successfully!'
+            echo 'SUCCESS: Frontend and Backend images built, scanned and pushed to ECR successfully!'
+        }
+
+        failure {
+            echo 'PIPELINE FAILED: Please check the stage logs for details.'
         }
     }
 }
+```
