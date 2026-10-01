@@ -1,3 +1,4 @@
+```groovy
 pipeline {
     agent any
 
@@ -70,25 +71,23 @@ pipeline {
             }
         }
 
-        stage('Trivy Security Scan') {
+        stage('Trivy Frontend Scan') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo " Trivy Frontend Image Security Scan"
-                    echo "======================================"
-
                     trivy image \
-                    --format table \
                     --severity HIGH,CRITICAL \
+                    --format table \
                     ${FRONTEND_IMAGE}:latest
+                '''
+            }
+        }
 
-                    echo "======================================"
-                    echo " Trivy Backend Image Security Scan"
-                    echo "======================================"
-
+        stage('Trivy Backend Scan') {
+            steps {
+                sh '''
                     trivy image \
-                    --format table \
                     --severity HIGH,CRITICAL \
+                    --format table \
                     ${BACKEND_IMAGE}:latest
                 '''
             }
@@ -97,8 +96,7 @@ pipeline {
         stage('Push Frontend Image') {
             steps {
                 sh '''
-                    docker push \
-                    ${FRONTEND_IMAGE}:latest
+                    docker push ${FRONTEND_IMAGE}:latest
                 '''
             }
         }
@@ -106,8 +104,7 @@ pipeline {
         stage('Push Backend Image') {
             steps {
                 sh '''
-                    docker push \
-                    ${BACKEND_IMAGE}:latest
+                    docker push ${BACKEND_IMAGE}:latest
                 '''
             }
         }
@@ -115,45 +112,71 @@ pipeline {
         stage('Deploy with Docker Compose') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo " Deploying Application"
-                    echo "======================================"
+                    docker compose down
 
                     docker compose pull
+
                     docker compose up -d
-
-                    echo "======================================"
-                    echo " Container Status"
-                    echo "======================================"
-
-                    docker compose ps
                 '''
             }
         }
 
-        stage('Application Health Check') {
+        stage('Wait for Containers') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo " Application Health Check"
-                    echo "======================================"
-
-                    echo "Waiting for services..."
+                    echo "Waiting for containers to start..."
                     sleep 15
+                '''
+            }
+        }
 
-                    echo "Checking Backend..."
-                    curl -f http://localhost:3000
+        stage('Health Check') {
+            steps {
+                sh '''
+                    echo "Checking Container Status..."
 
-                    echo ""
-                    echo "Checking Frontend..."
-                    curl -f http://localhost:5173
-
-                    echo ""
-                    echo "Checking Container Health..."
                     docker compose ps
 
                     echo ""
-                    echo "Application health check completed successfully!"
+                    echo "Checking Backend Container..."
+                    BACKEND_STATUS=$(docker inspect -f '{{.State.Status}}' backend-container)
+                    echo "Backend Status: ${BACKEND_STATUS}"
+
+                    if [ "${BACKEND_STATUS}" != "running" ]; then
+                        echo "Backend container is not running!"
+                        exit 1
+                    fi
+
+                    echo ""
+                    echo "Checking Frontend Container..."
+                    FRONTEND_STATUS=$(docker inspect -f '{{.State.Status}}' frontend-container)
+                    echo "Frontend Status: ${FRONTEND_STATUS}"
+
+                    if [ "${FRONTEND_STATUS}" != "running" ]; then
+                        echo "Frontend container is not running!"
+                        exit 1
+                    fi
+
+                    echo ""
+                    echo "Checking MySQL Container..."
+                    MYSQL_STATUS=$(docker inspect -f '{{.State.Status}}' mysql)
+                    echo "MySQL Status: ${MYSQL_STATUS}"
+
+                    if [ "${MYSQL_STATUS}" != "running" ]; then
+                        echo "MySQL container is not running!"
+                        exit 1
+                    fi
+
+                    echo ""
+                    echo "All containers are running successfully."
+                '''
+            }
+        }
+
+        stage('Cleanup Old Images') {
+            steps {
+                sh '''
+                    docker image prune -f
                 '''
             }
         }
@@ -161,11 +184,23 @@ pipeline {
 
     post {
         success {
-            echo 'SUCCESS: Build, Trivy scan, ECR push, Docker Compose deployment and health checks completed successfully!'
+            echo '======================================'
+            echo 'Jenkins Pipeline Completed Successfully'
+            echo 'Docker Compose Deployment Successful'
+            echo 'All Containers Are Running'
+            echo '======================================'
         }
 
         failure {
-            echo 'PIPELINE FAILED: Please check the failed stage logs.'
+            echo '======================================'
+            echo 'Jenkins Pipeline Failed'
+            echo 'Please check the stage logs'
+            echo '======================================'
+        }
+
+        always {
+            sh 'docker ps -a || true'
         }
     }
 }
+```

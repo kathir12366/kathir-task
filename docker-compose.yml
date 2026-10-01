@@ -19,8 +19,6 @@ services:
   backend:
     image: 240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-backend:latest
     restart: always
-    ports:
-      - "3000:3000"
     environment:
       DB_HOST: mysql
       DB_USER: root
@@ -41,8 +39,6 @@ services:
   frontend:
     image: 240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-frontend:latest
     restart: always
-    ports:
-      - "5173:5173"
     depends_on:
       backend:
         condition: service_healthy
