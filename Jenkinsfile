@@ -3,13 +3,13 @@ pipeline {
 
     environment {
         AWS_REGION = "ap-south-1"
-        AWS_ACCOUNT_ID = "660815084808"
+        AWS_ACCOUNT_ID = "240571106446"
 
-        FRONTEND_REPO = "frontend-repo"
-        BACKEND_REPO = "backend-repo"
+        FRONTEND_REPO = "sabarifullstack-frontend"
+        BACKEND_REPO = "sabarifullstack-backend"
 
-        FRONTEND_IMAGE = "660815084808.dkr.ecr.ap-south-1.amazonaws.com/frontend-repo"
-        BACKEND_IMAGE = "660815084808.dkr.ecr.ap-south-1.amazonaws.com/backend-repo"
+        FRONTEND_IMAGE = "240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-frontend"
+        BACKEND_IMAGE = "240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-backend"
     }
 
     stages {
@@ -45,7 +45,7 @@ pipeline {
                     docker login \
                     --username AWS \
                     --password-stdin \
-                    660815084808.dkr.ecr.ap-south-1.amazonaws.com
+                    240571106446.dkr.ecr.ap-south-1.amazonaws.com
                 '''
             }
         }
@@ -54,7 +54,7 @@ pipeline {
             steps {
                 sh '''
                     docker build \
-                    -t 660815084808.dkr.ecr.ap-south-1.amazonaws.com/frontend-repo:latest \
+                    -t 240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-frontend:latest \
                     ./frontend
                 '''
             }
@@ -64,7 +64,7 @@ pipeline {
             steps {
                 sh '''
                     docker build \
-                    -t 660815084808.dkr.ecr.ap-south-1.amazonaws.com/backend-repo:latest \
+                    -t 240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-backend:latest \
                     ./backend
                 '''
             }
@@ -74,7 +74,7 @@ pipeline {
             steps {
                 sh '''
                     docker push \
-                    660815084808.dkr.ecr.ap-south-1.amazonaws.com/frontend-repo:latest
+                    240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-frontend:latest
                 '''
             }
         }
@@ -83,7 +83,7 @@ pipeline {
             steps {
                 sh '''
                     docker push \
-                    660815084808.dkr.ecr.ap-south-1.amazonaws.com/backend-repo:latest
+                    240571106446.dkr.ecr.ap-south-1.amazonaws.com/sabarifullstack-backend:latest
                 '''
             }
         }
