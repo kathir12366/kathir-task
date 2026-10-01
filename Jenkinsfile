@@ -150,18 +150,7 @@ pipeline {
 
                     echo ""
                     echo "Checking Container Health..."
-
-                    docker inspect \
-                    --format='{{.Name}} : {{.State.Health.Status}}' \
-                    mysql-container
-
-                    docker inspect \
-                    --format='{{.Name}} : {{.State.Health.Status}}' \
-                    backend-container
-
-                    docker inspect \
-                    --format='{{.Name}} : {{.State.Health.Status}}' \
-                    frontend-container
+                    docker compose ps
 
                     echo ""
                     echo "Application health check completed successfully!"
